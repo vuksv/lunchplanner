@@ -55,8 +55,7 @@ FriendlyChat.prototype.initFirebase = function() {
 
 // Loads chat messages history and listens for upcoming ones.
 FriendlyChat.prototype.loadMessages = function() {
-  // Reference to the /messages/ database path.
-  this.messagesRef = this.database.ref('messages');
+
   // Make sure we remove all previous listeners.
   this.messagesRef.off();
 
@@ -73,15 +72,6 @@ FriendlyChat.prototype.loadMessages = function() {
 FriendlyChat.prototype.isLocationSelected = function() {
   return true;
 };
-// Initializes users for each location
-FriendlyChat.prototype.defaultMessages = function() {
-  for(var i = 0 ; i < this.messagesRef.length ; i++ ) {
-    var users = this.messagesRef[i].users;
-    if(users.indexOf(this.auth.currentUser.uid) == -1) {
-      users.push({user:this.auth.currentUser});
-    }
-  }
-};
 
 // Saves a new message on the Firebase DB.
 FriendlyChat.prototype.saveMessage = function(e) {
@@ -89,8 +79,10 @@ FriendlyChat.prototype.saveMessage = function(e) {
   // Check that the user entered a message and is signed in.
   if (this.messageInput.value && this.checkSignedInWithMessage()) {
     // Add a new message entry to the Firebase Database.
+
+
     var newMessage = {
-        text: this.messageInput.value,
+        text: this.messageInput.value
     }
 
     this.messagesRef.push(
@@ -125,6 +117,8 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     var profilePicUrl = user.photoURL;
     var userName = user.displayName;
 
+    var uid = this.auth.currentUser.uid;
+
     // Set the user's profile pic and name.
     this.userPic.style.backgroundImage = 'url(' + (profilePicUrl || '/images/profile_placeholder.png') + ')';
     this.userName.textContent = userName;
@@ -137,19 +131,27 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     // Hide sign-in button.
     this.signInButton.setAttribute('hidden', 'true');
 
-    //Fill in default of all messages with true
-    //this.defaultMessages();
-    var usersRef = firebase.database().ref('users');
-    var currentUser = usersRef.child(userName).val;
-    if(!currentUser) {
-      usersRef.push({user:this.auth.currentUser.uid});
-    }
+    // Reference to the /messages/ database path.
+    this.messagesRef = this.database.ref('messages');
+
     //add user to user database
 
+    this.usersRef = firebase.database().ref('users');
+    
+    this.usersRef.once('value', function(snapshot){
+      if(!snapshot.hasChild(uid)) {
+        //Add new user with default all places set to true
+        firebase.database().ref('messages').once('value',function(messagesSnapshot){
+          messagesSnapshot.forEach(function(placeSnapshot){
+            var placeName = placeSnapshot.val().text;
+             firebase.database().ref('users/' + uid + '/' + placeName).set(true);
+          });
+        });
+      }
+    });
+    
     // We load currently existing chant messages.
     this.loadMessages();
-
-    console.log(this.messagesRef);
 
     // We save the Firebase Messaging Device token and enable notifications.
     this.saveMessagingDeviceToken();
@@ -187,7 +189,7 @@ FriendlyChat.prototype.saveMessagingDeviceToken = function() {
       console.log('Got FCM device token:', currentToken);
       // Saving the Device Token to the datastore.
       firebase.database().ref('/fcmTokens').child(currentToken)
-          .set(firebase.auth().currentUser.uid);
+          .set(this.auth.currentUser.uid);
     } else {
       // Need to request permissions to show notifications.
       this.requestNotificationsPermissions();
@@ -224,11 +226,6 @@ FriendlyChat.MESSAGE_TEMPLATE =
 // A loading image URL.
 FriendlyChat.LOADING_IMAGE_URL = 'https://www.google.com/images/spin-32.gif';
 
-
-
-
-
-
 // Displays a Message in the UI.
 FriendlyChat.prototype.displayMessage = function(key, text, isChecked) {
   var div = document.getElementById(key);
@@ -246,29 +243,13 @@ FriendlyChat.prototype.displayMessage = function(key, text, isChecked) {
     checkboxElement.setAttribute('checked',true);
   }
 
-  var messageElement = div.querySelector('.message');
-  if (text) { // If the message is text.
-    messageElement.textContent = text;
-    // Replace all line breaks by <br>.
-    messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
-  }
+  var messageElement = div.querySelector('.message').textContent = text;
+
   // Show the card fading-in and scroll to view the new message.
   setTimeout(function() {div.classList.add('visible')}, 1);
   this.messageList.scrollTop = this.messageList.scrollHeight;
   this.messageInput.focus();
 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // Enables or disables the submit button depending on the values of the input
@@ -287,5 +268,3 @@ window.onload = function() {
 
 
 
-
-////MY FUNCTIONS
