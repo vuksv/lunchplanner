@@ -31,7 +31,7 @@ function FriendlyChat() {
   this.signInSnackbar = document.getElementById('must-signin-snackbar');
 
   // Saves message on form submit.
-  this.messageForm.addEventListener('submit', this.saveMessage.bind(this));
+  this.messageForm.addEventListener('submit', this.savePlace.bind(this));
   this.signOutButton.addEventListener('click', this.signOut.bind(this));
   this.signInButton.addEventListener('click', this.signIn.bind(this));
 
@@ -61,18 +61,14 @@ FriendlyChat.prototype.loadMessages = function() {
 
   // Loads the last 12 messages and listen for new ones.
   var setMessage = function(data) {
-    var val = data.val();
-    this.displayMessage(data.key, val.text, this.isLocationSelected());
+    this.displayMessage(data.key, data.val());
   }.bind(this);
-  this.messagesRef.on('child_added', setMessage);
-  this.messagesRef.on('child_changed', setMessage);
+  this.database.ref('/users').child(this.uid).on('child_added', setMessage);
+  this.database.ref('/users').child(this.uid).on('child_changed', setMessage);
 };
 
-//Look up user
-FriendlyChat.prototype.isLocationSelected = function() {
-  return true;
-};
 
+/*
 // Saves a new message on the Firebase DB.
 FriendlyChat.prototype.saveMessage = function(e) {
   e.preventDefault();
@@ -97,6 +93,34 @@ FriendlyChat.prototype.saveMessage = function(e) {
   }
 };
 
+*/
+// Saves a new message on the Firebase DB.
+FriendlyChat.prototype.savePlace = function(e) {
+  e.preventDefault();
+  // Check that the user entered a message and is signed in.
+  if (this.messageInput.value && this.checkSignedInWithMessage()) {
+    // Add a new message entry to the Firebase Database.
+    var place = this.messageInput.value;
+    this.messagesRef.child(this.messageInput.value).set(this.messageInput.value).then(function() {
+      //add new place to all users
+      firebase.database().ref('users').once('value',function(usersSnapshot){
+        usersSnapshot.forEach(function(userSnapshot){
+          var uid = userSnapshot.key;
+          console.log(uid);
+            firebase.database().ref('users/' + uid + '/' + place).set(true);
+        });
+      });
+
+      // Clear message text field and SEND button state.
+      FriendlyChat.resetMaterialTextfield(this.messageInput);
+      this.toggleButton();
+      }.bind(this)).catch(function(error) {
+        console.error('Error writing new message to Firebase Database', error);
+      });
+  }
+};
+
+
 // Signs-in Friendly Chat.
 FriendlyChat.prototype.signIn = function() {
   // Sign in Firebase using popup auth and Google as the identity provider.
@@ -118,6 +142,7 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     var userName = user.displayName;
 
     var uid = this.auth.currentUser.uid;
+    this.uid = uid;
 
     // Set the user's profile pic and name.
     this.userPic.style.backgroundImage = 'url(' + (profilePicUrl || '/images/profile_placeholder.png') + ')';
@@ -141,9 +166,9 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     this.usersRef.once('value', function(snapshot){
       if(!snapshot.hasChild(uid)) {
         //Add new user with default all places set to true
-        firebase.database().ref('messages').once('value',function(messagesSnapshot){
+        firebase.database().ref('messages').on('value',function(messagesSnapshot){
           messagesSnapshot.forEach(function(placeSnapshot){
-            var placeName = placeSnapshot.val().text;
+            var placeName = placeSnapshot.key;
              firebase.database().ref('users/' + uid + '/' + placeName).set(true);
           });
         });
@@ -219,7 +244,7 @@ FriendlyChat.resetMaterialTextfield = function(element) {
 // Template for messages.
 FriendlyChat.MESSAGE_TEMPLATE =
     '<div class="message-container">' +
-      '<div class="spacing"><input type="checkbox"></div>' +
+      '<div class="spacing"><input type="checkbox" onClick="checkBoxChanged(this);"></div>' +
       '<div class="message"></div>' +
     '</div>';
 
@@ -227,14 +252,14 @@ FriendlyChat.MESSAGE_TEMPLATE =
 FriendlyChat.LOADING_IMAGE_URL = 'https://www.google.com/images/spin-32.gif';
 
 // Displays a Message in the UI.
-FriendlyChat.prototype.displayMessage = function(key, text, isChecked) {
-  var div = document.getElementById(key);
+FriendlyChat.prototype.displayMessage = function(name, isChecked) {
+  var div = document.getElementById(name);
   // If an element for that message does not exists yet we create it.
   if (!div) {
     var container = document.createElement('div');
     container.innerHTML = FriendlyChat.MESSAGE_TEMPLATE;
     div = container.firstChild;
-    div.setAttribute('id', key);
+    div.setAttribute('id', name);
     this.messageList.appendChild(div);
   }
 
@@ -243,7 +268,7 @@ FriendlyChat.prototype.displayMessage = function(key, text, isChecked) {
     checkboxElement.setAttribute('checked',true);
   }
 
-  var messageElement = div.querySelector('.message').textContent = text;
+  var messageElement = div.querySelector('.message').textContent = name;
 
   // Show the card fading-in and scroll to view the new message.
   setTimeout(function() {div.classList.add('visible')}, 1);
@@ -267,4 +292,11 @@ window.onload = function() {
 };
 
 
-
+function checkBoxChanged(checkboxElement) {
+  var uid = window.friendlyChat.auth.currentUser.uid;
+  var place = checkboxElement.parentNode.nextSibling.innerHTML;
+  if(place) {
+    var newPlace =
+    window.friendlyChat.database.ref('users/' + uid +'/' + place).set(checkboxElement.checked);
+  }
+}
