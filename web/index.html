@@ -59,6 +59,7 @@
         <h3><i class="material-icons">chat_bubble_outline</i> Lunch Planner</h3>
       </div>
       <div id="user-container">
+        <div hidden id="going-status">Going</div>
         <div hidden id="user-pic"></div>
         <div hidden id="user-name"></div>
         <button hidden id="sign-out" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
@@ -91,7 +92,19 @@
           </form>
         </div>
       </div>
-
+      <!-- Results container -->
+      <div id="results-card" class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop">
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <div id="results">
+            <span id="reult-filler"></span>
+          </div>
+          <div id="going-button-container">
+            <button hidden id="going" disabled type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              I'm Going To Lunch
+            </button>
+          </div>
+        </div>
+      </div>
       <div id="must-signin-snackbar" class="mdl-js-snackbar mdl-snackbar">
         <div class="mdl-snackbar__text"></div>
         <button class="mdl-snackbar__action" type="button"></button>

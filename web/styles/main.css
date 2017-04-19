@@ -28,6 +28,17 @@ main, #messages-card {
 #messages-card {
   margin-top: 15px;
 }
+main, #results-card {
+  height: 100%;
+  padding-bottom: 0;
+}
+#results-card-container {
+  height: calc(100% - 150px);
+  padding-bottom: 0;
+}
+#results-card {
+  margin-top: 15px;
+}
 .mdl-layout__header-row span {
   margin-left: 15px;
   margin-top: 17px;
@@ -56,7 +67,15 @@ main, #messages-card {
   margin-bottom: 10px;
   height: calc(100% - 80px);
 }
+#results {
+  overflow-y: auto;
+  margin-bottom: 10px;
+  height: calc(100% - 80px);
+}
 #message-filler {
+  flex-grow: 1;
+}
+#results-filler {
   flex-grow: 1;
 }
 .message-container:first-of-type {
@@ -90,6 +109,11 @@ main, #messages-card {
   width: calc(100% - 40px);
   padding: 5px 0 5px 10px;
 }
+.message-container .result {
+  display: table-cell;
+  width: calc(100% - 40px);
+  padding: 5px 0 5px 10px;
+}
 .message-container .name {
   display: inline-block;
   width: 100%;
@@ -100,6 +124,12 @@ main, #messages-card {
   box-sizing: border-box;
 }
 #message-form {
+  display: flex;
+  flex-direction: row;
+  width: calc(100% - 24px);
+  float: left;
+}
+#result-form {
   display: flex;
   flex-direction: row;
   width: calc(100% - 24px);
@@ -152,6 +182,21 @@ main, #messages-card {
   line-height: 36px;
   padding-right: 10px;
   padding-left: 20px;
+}
+#user-container #going-status {
+  font-size: 16px;
+  line-height: 36px;
+  padding-right: 10px;
+  padding-left: 20px;
+  color: #4db6ac;
+  font-weight: bold;
+}
+#going-button-container {
+  font-size: 16px;
+  line-height: 36px;
+  padding-right: 10px;
+  padding-left: 20px;
+  font-color: green;
 }
 #image-form #submitImage {
   width: auto;
