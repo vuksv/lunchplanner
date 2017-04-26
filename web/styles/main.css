@@ -17,26 +17,15 @@
 html, body {
   font-family: 'Roboto', 'Helvetica', sans-serif;
 }
-main, #messages-card {
+main, #messages-card, #results-card, #going-card {
   height: 100%;
   padding-bottom: 0;
 }
-#messages-card-container {
+#messages-card-container, #results-card-container {
   height: calc(100% - 150px);
   padding-bottom: 0;
 }
-#messages-card {
-  margin-top: 15px;
-}
-main, #results-card {
-  height: 100%;
-  padding-bottom: 0;
-}
-#results-card-container {
-  height: calc(100% - 150px);
-  padding-bottom: 0;
-}
-#results-card {
+#messages-card, #results-card, #going-card{
   margin-top: 15px;
 }
 .mdl-layout__header-row span {
@@ -62,20 +51,12 @@ main, #results-card {
   padding-top: 0;
   padding-bottom: 0;
 }
-#messages {
+#messages, #results, #going{
   overflow-y: auto;
   margin-bottom: 10px;
   height: calc(100% - 80px);
 }
-#results {
-  overflow-y: auto;
-  margin-bottom: 10px;
-  height: calc(100% - 80px);
-}
-#message-filler {
-  flex-grow: 1;
-}
-#results-filler {
+#message-filler, #results-filler, #going-filler {
   flex-grow: 1;
 }
 .message-container:first-of-type {
@@ -123,13 +104,7 @@ main, #results-card {
   font-size: 12px;
   box-sizing: border-box;
 }
-#message-form {
-  display: flex;
-  flex-direction: row;
-  width: calc(100% - 24px);
-  float: left;
-}
-#result-form {
+#message-form, #result-form {
   display: flex;
   flex-direction: row;
   width: calc(100% - 24px);
@@ -183,7 +158,24 @@ main, #results-card {
   padding-right: 10px;
   padding-left: 20px;
 }
-#user-container #going-status {
+#user-container #going-status{
+  font-size: 16px;
+  line-height: 36px;
+  padding-right: 10px;
+  padding-left: 20px;
+  color: #4db6ac;
+  font-weight: bold;
+}
+
+#user-container #going-status .is-going{
+  font-size: 16px;
+  line-height: 36px;
+  padding-right: 10px;
+  padding-left: 20px;
+  color: #4db6ac;
+  font-weight: bold;
+}
+#user-container #going-status .is-not-going{
   font-size: 16px;
   line-height: 36px;
   padding-right: 10px;

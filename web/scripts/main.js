@@ -21,10 +21,11 @@ function FriendlyChat() {
   // Shortcuts to DOM Elements.
   this.messageList = document.getElementById('messages');
   this.resultList = document.getElementById('results');
+  this.goingList = document.getElementById('going');
   this.messageForm = document.getElementById('message-form');
   this.messageInput = document.getElementById('message');
   this.submitButton = document.getElementById('submit');
-  this.goingButton = document.getElementById('going');
+  this.goingButton = document.getElementById('going-button');
   this.goingStatus = document.getElementById('going-status');
   this.userPic = document.getElementById('user-pic');
   this.userName = document.getElementById('user-name');
@@ -67,8 +68,8 @@ FriendlyChat.prototype.loadMessages = function() {
   var setMessage = function(data) {
     this.displayMessage(data.key, data.val());
   }.bind(this);
-  this.usersRef.child(this.uid).on('child_added', setMessage);
-  this.usersRef.child(this.uid).on('child_changed', setMessage);
+  this.usersRef.child(this.uid).child('preferences').on('child_added', setMessage);
+  this.usersRef.child(this.uid).child('preferences').on('child_changed', setMessage);
 };
 
 // Loads chat messages history and listens for upcoming ones.
@@ -84,6 +85,19 @@ FriendlyChat.prototype.loadResults = function() {
   this.messagesRef.on('child_changed', setResult);
 };
 
+// Loads chat messages history and listens for upcoming ones.
+FriendlyChat.prototype.loadGoing = function() {
+  var setGoing = function(data) {
+    if(data.val()) {
+      this.displayGoing(data.key);
+    } else {
+      this.removeGoing(data.key);
+    }
+  }.bind(this);
+  this.goingRef.on('child_added', setGoing);
+  this.goingRef.on('child_changed', setGoing);
+};
+
 // Saves a new message on the Firebase DB.
 FriendlyChat.prototype.savePlace = function(e) {
   e.preventDefault();
@@ -96,7 +110,8 @@ FriendlyChat.prototype.savePlace = function(e) {
       window.friendlyChat.database.ref('users').once('value',function(usersSnapshot){
         usersSnapshot.forEach(function(userSnapshot){
           var uid = userSnapshot.key;
-          window.friendlyChat.database.ref('users/' + uid + '/' + place).set(true);
+          //set default false
+          window.friendlyChat.usersRef.child(uid).child('preferences').child(place).set(false);
         });
       });
       window.friendlyChat.updateResults();
@@ -125,7 +140,7 @@ FriendlyChat.prototype.updateResults = function() {
         window.friendlyChat.goingRef.once('value',function(goingUsersSnapshot) {
           var resultIsPossible = true;
             for(var uid in allUsers) {
-              if(!allUsers[uid][placeName] && goingUsersSnapshot.val()[uid]) {
+              if(!allUsers[uid].preferences[placeName] && goingUsersSnapshot.val()[uid]) {
                 resultIsPossible = false;
               }
             }
@@ -183,10 +198,11 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     this.usersRef.once('value', function(snapshot){
       if(!snapshot.hasChild(uid)) {
         //Add new user with default all places set to true
+        window.friendlyChat.usersRef.child(uid).child('name').set(userName);
         window.friendlyChat.database.ref('messages').on('value',function(messagesSnapshot){
           messagesSnapshot.forEach(function(placeSnapshot){
             var placeName = placeSnapshot.key;
-             window.friendlyChat.database.ref('users/' + uid + '/' + placeName).set(true);
+            window.friendlyChat.usersRef.child(uid).child('preferences').child(placeName).set(false);
           });
         });
       }
@@ -208,6 +224,7 @@ FriendlyChat.prototype.onAuthStateChanged = function(user) {
     // We load currently existing chant messages.
     this.loadMessages();
     this.loadResults();
+    this.loadGoing();
 
     this.goingButton.removeAttribute('disabled');
     // We save the Firebase Messaging Device token and enable notifications.
@@ -308,9 +325,41 @@ FriendlyChat.prototype.displayResult = function(name) {
 
 FriendlyChat.prototype.removeResult = function(name) {
   var div = document.getElementById("result-" + name);
-  div.setAttribute('hidden', 'true');
-
+  if(div) {
+    div.setAttribute('hidden', 'true');
+  }
 };
+
+// Template for results.
+FriendlyChat.GOING_TEMPLATE =
+    '<div class="going-container">' +
+      '<div class="spacing"></div>' +
+      '<div class="name"></div>' +
+    '</div>';
+
+FriendlyChat.prototype.displayGoing = function(uid) {
+  var div = document.getElementById("going-" + uid);
+  if(!div){
+    var container = document.createElement('div');
+    container.innerHTML = FriendlyChat.GOING_TEMPLATE;
+    div = container.firstChild;
+    div.setAttribute('id', "going-" + uid);
+    this.goingList.appendChild(div);
+  }
+  this.usersRef.child(uid).child('name').once('value',function(nameSnapshot) {
+    var name = nameSnapshot.val();
+    div.querySelector('.name').textContent = name;
+    div.removeAttribute('hidden');
+  });
+};
+
+FriendlyChat.prototype.removeGoing = function(name) {
+  var div = document.getElementById("going-" + name);
+  if(div) {
+    div.setAttribute('hidden', 'true');
+  }
+}
+
 
 // Enables or disables the submit button depending on the values of the input
 // fields.
@@ -352,8 +401,8 @@ FriendlyChat.prototype.checkBoxChanged = function(checkboxElement) {
   var uid = window.friendlyChat.auth.currentUser.uid;
   var place = checkboxElement.parentNode.nextSibling.innerHTML;
   if(place) {
-    this.database.ref('users/' + uid +'/' + place).set(checkboxElement.checked);
-    window.friendlyChat.updateResults();
+    this.usersRef.child(uid).child('preferences').child(place).set(checkboxElement.checked);
+    this.updateResults();
   }
 }
 
